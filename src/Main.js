@@ -11,7 +11,6 @@ const Main = () => {
   const [clientCode, setClientCode] = useState(null);
   const [opt, setOpt] = useState([]);
   const [arr, setArr] = useState([]);
-  const gridRef = useRef();
 
   const readUploadFile = (e) => {
     e.preventDefault();
@@ -24,14 +23,35 @@ const Main = () => {
         const worksheet = workbook.Sheets[sheetName];
         const json = XLSX.utils.sheet_to_json(worksheet);
         console.log(json);
+        fileUpload(json);
         let abc = json?.filter(
           (x) => x?.["Client "]?.trim() === clientCode?.id
         );
-        abc.map()
         setArr(abc);
       };
       reader.readAsArrayBuffer(e.target.files[0]);
     }
+  };
+
+  const getClientData = (value) => {
+    fetch(`http://localhost:3001/getClientData?clientCode=${value?.id}`)
+      .then((response) => {
+        return response.text();
+      })
+      .then((data) => {
+        console.log(data);
+      });
+  };
+
+  const fileUpload = (payload) => {
+    console.log(";asdhuaduhbsad", payload);
+    fetch(`http://localhost:3001/fileUpload`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ body: payload }),
+    }).then((res) => console.log(res));
   };
 
   useEffect(() => {
@@ -52,16 +72,13 @@ const Main = () => {
         value={clientCode}
         onChange={(e, value) => {
           setClientCode(value);
+          getClientData(value);
         }}
         getOptionLabel={(option) => option.value}
         sx={{ width: "300px" }}
         renderInput={(params) => <TextField {...params} label="Client Code" />}
       />
-      <Button
-        component="label"
-        variant="contained"
-        // startIcon={<CloudUploadIcon />}
-      >
+      <Button component="label" variant="contained">
         {"Upload file"}
         <input
           style={{ display: "none" }}
@@ -72,6 +89,9 @@ const Main = () => {
       <div className="ag-theme-alpine" style={{ height: "500px" }}>
         <AgGridReact
           rowData={arr}
+          onRowDataUpdated={(params) => {
+            params.api.sizeColumnsToFit();
+          }}
           columnDefs={[
             { headerName: "Client Code", field: "Client " },
             { headerName: "abc", field: "Client " },

@@ -1,4 +1,10 @@
-import React, { useContext, useEffect, useState, useRef } from "react";
+import React, {
+  useContext,
+  useEffect,
+  useState,
+  useRef,
+  useCallback,
+} from "react";
 import * as XLSX from "xlsx";
 import file1 from "./client.json";
 import {
@@ -141,13 +147,36 @@ const Print = () => {
             );
           })
         );
+      } else if (files?.length && !clientCode && !startDate) {
+        setArr(
+          files.filter((x) => {
+            return (
+              // clientCode?.id === x?.["Client "]?.trim() &&
+              // startDate <= x?.date &&
+              // endDate >= x?.date &&
+              x?.["Status "]?.trim() === "Entry Request" ||
+              x?.["Status "]?.trim() === "Modify Request" ||
+              x?.["Status "]?.trim() === "Cancel Request" ||
+              x?.["Status "]?.trim() === "Exchange Reject"
+            );
+          })
+        );
       }
     }
   }, [allowed, clientCode, endDate, files, startDate]);
 
+  const onGridReady = useCallback((params) => {
+    const defaultSortModel = [
+      { colId: "date", sort: "asc", sortIndex: 0 },
+      { colId: "Client ", sort: "asc", sortIndex: 1 },
+      { colId: "TransactionTime ", sort: "asc", sortIndex: 2 },
+    ];
+    params.columnApi.applyColumnState({ state: defaultSortModel });
+  }, []);
+
   useEffect(() => {
-    console.log("clientCode", clientCode);
-  }, [clientCode]);
+    console.log("clientCode", clientCode, arr);
+  }, [clientCode, arr]);
   return (
     <>
       <div style={{ display: "flex" }}>
@@ -212,14 +241,18 @@ const Print = () => {
         </Button>
       </div>
       <div>
-        <div className="ag-theme-alpine" style={{ height: "500px" }}>
+        <div className="ag-theme-alpine" style={{ height: "85vh" }}>
           <AgGridReact
             rowData={arr}
             ref={gridRef}
             onRowDataUpdated={(params) => {
               params.api.sizeColumnsToFit();
             }}
+            onGridReady={onGridReady}
+            defaultColDef={{ sortable: true }}
+            multiSortKey="ctrl"
             columnDefs={[
+              { headerName: "Client Code", field: "Client " },
               {
                 headerName: "Date",
                 field: "date",
@@ -262,7 +295,6 @@ const Print = () => {
                   "Remarks (specify if any order modified/ cancelled)",
                 field: "Status ",
               },
-              { headerName: "Client Code", field: "Client " },
             ]}
           ></AgGridReact>
         </div>
